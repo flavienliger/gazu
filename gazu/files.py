@@ -487,8 +487,10 @@ def new_entity_output_file(
     person=None,
     name="main",
     mode="output",
+    file_path="",
     revision=0,
     nb_elements=1,
+    frame_start=1,
     representation="",
     sep="/",
     file_status_id=None,
@@ -532,7 +534,9 @@ def new_entity_output_file(
         "revision": revision,
         "representation": representation,
         "name": name,
+        "path": file_path,
         "nb_elements": nb_elements,
+        "frame_start": frame_start,
         "sep": sep,
     }
 
@@ -1040,6 +1044,16 @@ def update_preview(preview_file, data):
     preview_file = normalize_model_parameter(preview_file)
     path = "/data/preview-files/%s" % preview_file["id"]
     return client.put(path, data)
+
+
+# TODO: unittest
+@cache
+def all_file_status():
+    """
+    Returns:
+        list: Output file-status listed in database.
+    """
+    return client.fetch_all("file-status")
 
 
 def new_file_status(name, color):
