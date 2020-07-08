@@ -1068,3 +1068,131 @@ def get_file_status_by_name(name):
     Return file status object corresponding to given name
     """
     return client.fetch_first("file-status?name=%s" % name)
+
+
+# TODO: unittest
+@cache
+def get_children_file(children_file_id):
+    """
+    Args:
+        children_file_id (str): ID of claimed children file.
+
+    Returns:
+        dict: Children file matching given ID.
+    """
+    path = "data/children-files/%s" % (children_file_id)
+    return client.get(path)
+
+
+# TODO: unittest
+def new_children_file(output_file, output_type, size=None, file_status=None):
+    """
+    Create a new children file of a output file
+
+    Args:
+        output_file (str / dict): The output file dict or ID.
+        output_type (str / dict): The output type dict or ID.
+
+    Returns:
+        dict: Created children file.
+    """
+    output_file = normalize_model_parameter(output_file)
+    output_type = normalize_model_parameter(output_type)
+
+    data = {
+        "output_type_id": output_type["id"],
+        "size": size,
+    }
+    if file_status is not None:
+        file_status = normalize_model_parameter(file_status)
+        data["file_status_id"] = file_status["id"]
+
+    return client.post("data/files/%s/children-files/new" % output_file["id"], data)
+
+
+# TODO: unittest
+def update_children_file(children_file, data):
+    """
+    Update the data of given children file.
+
+    Args:
+        children_file (str / dict): The children file dict or ID.
+
+    Returns:
+        dict: Modified children file
+    """
+    children_file = normalize_model_parameter(children_file)
+    path = "data/children-files/%s" % children_file["id"]
+    return client.put(path, data)
+
+
+# TODO: unittest
+def remove_children_file(children_file):
+    """
+    Remove children file from database.
+
+    Args:
+        task_status (str / dict): The task status dict or ID.
+    """
+    children_file = normalize_model_parameter(children_file)
+    return client.delete(
+        "data/children-files/%s" % children_file["id"], {"force": "true"}
+    )
+
+
+# TODO: unittest
+@cache
+def get_dependent_file(dependent_file_id):
+    """
+    Args:
+        dependent_file_id (str): ID of claimed dependent file.
+
+    Returns:
+        dict: dependent file matching given ID.
+    """
+    path = "data/dependent-files/%s" % (dependent_file_id)
+    return client.get(path)
+
+
+# TODO: unittest
+def new_dependent_file(output_file, path, checksum=None, size=None):
+    """
+    """
+    output_file = normalize_model_parameter(output_file)
+    data = {
+        "path": path,
+        "checksum": checksum,
+        "size": size,
+    }
+    return client.post("data/files/%s/dependent-files/new" % output_file["id"], data)
+
+
+# TODO: unittest
+def update_dependent_file(dependent_file, data):
+    """
+    Update the data of given dependent file.
+
+    Args:
+        output_file (str / dict): The output file dict or ID.
+
+    Returns:
+        dict: Modified output file
+    """
+    dependent_file = normalize_model_parameter(dependent_file)
+    path = "data/dependent-files/%s" % dependent_file["id"]
+    return client.put(path, data)
+
+
+# TODO: unittest
+def remove_dependent_file(dependent_file):
+    """
+    Remove dependent file from database.
+
+    Args:
+        task_status (str / dict): The task status dict or ID.
+    """
+    dependent_file = normalize_model_parameter(dependent_file)
+    return client.delete(
+        "data/dependent-files/%s" % dependent_file["id"], {"force": "true"}
+    )
+
