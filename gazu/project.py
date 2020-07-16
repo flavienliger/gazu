@@ -15,6 +15,18 @@ def all_project_status():
 
 
 @cache
+def get_project_status_by_name(project_status_name):
+    """
+    Args:
+        project_status_name (str): Name of claimed project status.
+
+    Returns:
+        dict: Project status corresponding to given name.
+    """
+    return client.fetch_first("project-status", {"name": project_name})
+
+
+@cache
 def all_projects():
     """
     Returns:
@@ -43,6 +55,23 @@ def get_project(project_id):
     """
     return client.fetch_one("projects", project_id)
 
+@cache
+def get_project_url(project, section="assets"):
+    """
+    Args:
+        project (str / dict): The project dict or the project ID.
+        section (str): The section we want to open in the browser.
+
+    Returns:
+        url (str): Web url associated to the given project
+    """
+    project = normalize_model_parameter(project)
+    path = "{host}/productions/{project_id}/{section}/"
+    return path.format(
+        host=client.get_zou_url_from_host(),
+        project_id=project["id"],
+        section=section,
+    )
 
 @cache
 def get_project_by_name(project_name):

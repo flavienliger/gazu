@@ -28,7 +28,7 @@ def all_task_types():
 
 
 @cache
-def all_tasks_for_shot(shot):
+def all_tasks_for_shot(shot, relations=False):
     """
     Args:
         shot (str / dict): The shot dict or the shot ID.
@@ -37,12 +37,15 @@ def all_tasks_for_shot(shot):
         list: Tasks linked to given shot.
     """
     shot = normalize_model_parameter(shot)
-    tasks = client.fetch_all("shots/%s/tasks" % shot["id"])
+    params = {}
+    if relations:
+        params = {"relations": "true"}
+    tasks = client.fetch_all("shots/%s/tasks" % shot["id"], params)
     return sort_by_name(tasks)
 
 
 @cache
-def all_tasks_for_sequence(sequence):
+def all_tasks_for_sequence(sequence, relations=False):
     """
     Args:
         sequence (str / dict): The sequence dict or the sequence ID.
@@ -51,12 +54,15 @@ def all_tasks_for_sequence(sequence):
         list: Tasks linked to given sequence.
     """
     sequence = normalize_model_parameter(sequence)
-    tasks = client.fetch_all("sequences/%s/tasks" % sequence["id"])
+    params = {}
+    if relations:
+        params = {"relations": "true"}
+    tasks = client.fetch_all("sequences/%s/tasks" % sequence["id"], params)
     return sort_by_name(tasks)
 
 
 @cache
-def all_tasks_for_scene(scene):
+def all_tasks_for_scene(scene, relations=False):
     """
     Args:
         sequence (str / dict): The scene dict or the scene ID.
@@ -65,12 +71,15 @@ def all_tasks_for_scene(scene):
         list: Tasks linked to given scene.
     """
     scene = normalize_model_parameter(scene)
-    tasks = client.fetch_all("scenes/%s/tasks" % scene["id"])
+    params = {}
+    if relations:
+        params = {"relations": "true"}
+    tasks = client.fetch_all("scenes/%s/tasks" % scene["id"], params)
     return sort_by_name(tasks)
 
 
 @cache
-def all_tasks_for_asset(asset):
+def all_tasks_for_asset(asset, relations=False):
     """
     Args:
         asset (str / dict): The asset dict or the asset ID.
@@ -79,17 +88,23 @@ def all_tasks_for_asset(asset):
         list: Tasks directly linked to given asset.
     """
     asset = normalize_model_parameter(asset)
-    tasks = client.fetch_all("assets/%s/tasks" % asset["id"])
+    params = {}
+    if relations:
+        params = {"relations": "true"}
+    tasks = client.fetch_all("assets/%s/tasks" % asset["id"], params)
     return sort_by_name(tasks)
 
 
 @cache
-def all_tasks_for_episode(episode):
+def all_tasks_for_episode(episode, relations=False):
     """
     Retrieve all tasks directly linked to given episode.
     """
     episode = normalize_model_parameter(episode)
-    tasks = client.fetch_all("episodes/%s/tasks" % episode["id"])
+    params = {}
+    if relations:
+        params = {"relations": "true"}
+    tasks = client.fetch_all("episodes/%s/tasks" % episode["id"], params)
     return sort_by_name(tasks)
 
 
@@ -113,6 +128,27 @@ def all_tasks_for_task_status(project, task_type, task_status):
             "project_id": project["id"],
             "task_type_id": task_type["id"],
             "task_status_id": task_status["id"],
+        },
+    )
+
+
+@cache
+def all_tasks_for_task_type(project, task_type):
+    """
+    Args:
+        project (str / dict): The project dict or the project ID.
+        task_type (str / dict): The task type dict or ID.
+
+    Returns:
+        list: Tasks for given project and task type.
+    """
+    project = normalize_model_parameter(project)
+    task_type = normalize_model_parameter(task_type)
+    return client.fetch_all(
+        "tasks",
+        {
+            "project_id": project["id"],
+            "task_type_id": task_type["id"],
         },
     )
 
@@ -220,7 +256,7 @@ def all_done_tasks_for_person(person):
         list: Tasks that are done for given person (only for open projects).
     """
     person = normalize_model_parameter(person)
-    return client.fetch_all("persons/%s/tasks" % person["id"])
+    return client.fetch_all("persons/%s/done-tasks" % person["id"])
 
 
 @cache
@@ -530,7 +566,7 @@ def add_time_spent(task, person, date, duration):
     return client.post(path, {"duration": duration})
 
 
-def add_comment(task, task_status, comment=""):
+def add_comment(task, task_status, comment="", person=None, attachments=[]):
     """
     Add comment to given task. Each comment requires a task_status. Since the
     addition of comment triggers a task status change. Comment text can be
@@ -547,7 +583,22 @@ def add_comment(task, task_status, comment=""):
     task = normalize_model_parameter(task)
     task_status = normalize_model_parameter(task_status)
     data = {"task_status_id": task_status["id"], "comment": comment}
-    return client.post("actions/tasks/%s/comment" % task["id"], data)
+
+    if person is not None:
+        person = normalize_model_parameter(person)
+        data["person_id"] = person["id"]
+
+    if len(attachments) == 0:
+        return client.post("actions/tasks/%s/comment" % task["id"], data)
+
+    else:
+        attachment = attachments.pop()
+        return client.upload(
+            "actions/tasks/%s/comment" % task["id"],
+            attachment,
+            data=data,
+            extra_files=attachments
+        )
 
 
 def remove_comment(comment):
@@ -737,3 +788,21 @@ def update_task_data(task, data={}):
         updated_task["data"] = {}
     updated_task["data"].update(data)
     update_task(updated_task)
+
+
+@cache
+def get_task_url(task):
+    """
+    Args:
+        task (str / dict): The task dict or the task ID.
+
+    Returns:
+        url (str): Web url associated to the given task
+    """
+    task = normalize_model_parameter(task)
+    path = "{host}/productions/{project_id}/shots/tasks/{task_id}/"
+    return path.format(
+        host=client.get_zou_url_from_host(),
+        project_id=task["project_id"],
+        task_id=task["id"],
+    )

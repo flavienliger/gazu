@@ -2,7 +2,6 @@ import functools
 import json
 import shutil
 import urllib
-import sys
 
 from .encoder import CustomJSONEncoder
 
@@ -47,12 +46,34 @@ def host_is_up():
     return response.status_code == 200
 
 
+def host_is_valid():
+    """
+    Check if the host is valid by simulating a fake login.
+    Returns:
+        True if the host is valid.
+    """
+    if not host_is_up():
+        return False
+    try:
+        post("auth/login", {"email": "", "password": ""})
+    except Exception as exc:
+        return type(exc) == ParameterException
+
+
 def get_host():
     """
     Returns:
         Host on which requests are sent.
     """
     return HOST
+
+
+def get_zou_url_from_host():
+    """
+    Returns:
+        Zou url, retrieved from host.
+    """
+    return HOST[:-4]
 
 
 def set_host(new_host):
@@ -299,7 +320,7 @@ def create(model_name, data):
     return post(url_path_join("data", model_name), data)
 
 
-def upload(path, file_path):
+def upload(path, file_path, data={}, extra_files=[]):
     """
     Upload file located at *file_path* to given url *path*.
 
@@ -311,13 +332,24 @@ def upload(path, file_path):
         Response: Request response object.
     """
     url = get_full_url(path)
-    files = {"file": open(file_path, "rb")}
-    result = requests_session.post(
-        url, headers=make_auth_header(), files=files
-    ).json()
+    files = _build_file_dict(file_path, extra_files)
+    response = requests_session.post(
+        url, data=data, headers=make_auth_header(), files=files
+    )
+    check_status(response, path)
+    result = response.json()
     if "message" in result:
         raise UploadFailedException(result["message"])
     return result
+
+
+def _build_file_dict(file_path, extra_files):
+    files = {"file": open(file_path, "rb")}
+    i = 2
+    for file_path in extra_files:
+        files["file-%s" % i] = open(file_path, "rb")
+        i += 1
+    return files
 
 
 def download(path, file_path):
@@ -386,3 +418,12 @@ def get_file_data_from_url(url, full=False):
     response = requests.get(url, stream=True, headers=make_auth_header())
     check_status(response, url)
     return response
+
+
+def import_data(model_name, data):
+    """
+    Args:
+        model_name (str): The data model to import
+        data (dict): The data to import
+    """
+    return post("/import/kitsu/%s" % model_name, data)
