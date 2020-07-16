@@ -1,7 +1,7 @@
 from . import client
 
 from .cache import cache
-from .helpers import normalize_model_parameter
+from .helpers import normalize_model_parameter, timeit, get_extension
 
 
 @cache
@@ -438,6 +438,7 @@ def new_working_file(
     mode="working",
     software=None,
     comment="",
+    file_path="",
     person=None,
     revision=0,
     sep="/",
@@ -468,6 +469,7 @@ def new_working_file(
         "comment": comment,
         "task_id": task["id"],
         "revision": revision,
+        "path": file_path,
         "mode": mode,
     }
     if person is not None:
@@ -490,7 +492,6 @@ def new_entity_output_file(
     file_path="",
     revision=0,
     nb_elements=1,
-    frame_start=1,
     representation="",
     sep="/",
     file_status_id=None,
@@ -536,7 +537,7 @@ def new_entity_output_file(
         "name": name,
         "path": file_path,
         "nb_elements": nb_elements,
-        "frame_start": frame_start,
+        "extension": get_extension(file_path),
         "sep": sep,
     }
 
@@ -560,6 +561,7 @@ def new_asset_instance_output_file(
     comment,
     name="master",
     mode="output",
+    file_path="",
     working_file=None,
     person=None,
     revision=0,
@@ -609,9 +611,11 @@ def new_asset_instance_output_file(
         "task_type_id": task_type["id"],
         "comment": comment,
         "name": name,
+        "path": file_path,
         "revision": revision,
         "representation": representation,
         "nb_elements": nb_elements,
+        "extension": get_extension(file_path),
         "sep": sep,
     }
 
