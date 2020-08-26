@@ -3,6 +3,7 @@ from . import client
 from .sorting import sort_by_name
 from .cache import cache
 from .helpers import normalize_model_parameter
+from .person import get_person
 
 
 @cache
@@ -171,3 +172,13 @@ def close_project(project):
     update_project(project)
 
     return project
+
+
+def get_team_persons(project):
+    if not project.get("team"):
+        project = get_project(project["id"])
+
+    team = []
+    for person in project.get("team", []):
+        team.append(get_person(person))
+    return team
