@@ -140,6 +140,8 @@ def all_output_files_for_entity(
     name=None,
     representation=None,
     file_status=None,
+    created_at_since=None,
+    person=None,
 ):
     """
     Args:
@@ -159,6 +161,7 @@ def all_output_files_for_entity(
     output_type = normalize_model_parameter(output_type)
     task_type = normalize_model_parameter(task_type)
     file_status = normalize_model_parameter(file_status)
+    person = normalize_model_parameter(person)
     path = "entities/{entity_id}/output-files".format(entity_id=entity["id"])
 
     params = {}
@@ -172,6 +175,10 @@ def all_output_files_for_entity(
         params["name"] = name
     if file_status:
         params["file_status_id"] = file_status["id"]
+    if created_at_since:
+        params["created_at_since"] = created_at_since
+    if person:
+        params["person_id"] = person["id"]
 
     return client.fetch_all(path, params)
 
@@ -185,6 +192,8 @@ def all_output_files_for_asset_instance(
     name=None,
     representation=None,
     file_status=None,
+    created_at_since=None,
+    person=None,
 ):
     """
     Args:
@@ -205,6 +214,7 @@ def all_output_files_for_asset_instance(
     task_type = normalize_model_parameter(task_type)
     output_type = normalize_model_parameter(output_type)
     file_status = normalize_model_parameter(file_status)
+    person = normalize_model_parameter(person)
     path = "asset-instances/{asset_instance_id}/output-files".format(
         asset_instance_id=asset_instance["id"]
     )
@@ -222,6 +232,10 @@ def all_output_files_for_asset_instance(
         params["name"] = name
     if file_status:
         params["file_status_id"] = file_status["id"]
+    if created_at_since:
+        params["created_at_since"] = created_at_since
+    if person:
+        params["person_id"] = person["id"]
 
     return client.fetch_all(path, params)
 
@@ -442,6 +456,7 @@ def new_working_file(
     person=None,
     revision=0,
     sep="/",
+    size=None,
 ):
     """
     Create a new working_file for given task. It generates and store the
@@ -471,6 +486,7 @@ def new_working_file(
         "revision": revision,
         "path": file_path,
         "mode": mode,
+        "size": size,
     }
     if person is not None:
         data["person_id"] = person["id"]
@@ -485,15 +501,18 @@ def new_entity_output_file(
     output_type,
     task_type,
     comment,
+    comment=None,
     working_file=None,
     person=None,
     name="main",
     mode="output",
+    render_info=None,
     file_path="",
     revision=0,
     nb_elements=1,
     representation="",
     sep="/",
+    size=None,
     file_status_id=None,
 ):
     """
@@ -536,9 +555,11 @@ def new_entity_output_file(
         "representation": representation,
         "name": name,
         "path": file_path,
+        "render_info": render_info,
         "nb_elements": nb_elements,
         "extension": get_extension(file_path),
         "sep": sep,
+        "size": size,
     }
 
     if working_file is not None:
@@ -561,6 +582,7 @@ def new_asset_instance_output_file(
     comment,
     name="master",
     mode="output",
+    render_info=None,
     file_path="",
     working_file=None,
     person=None,
@@ -568,6 +590,7 @@ def new_asset_instance_output_file(
     nb_elements=1,
     representation="",
     sep="/",
+    size=None,
     file_status_id=None,
 ):
     """
@@ -612,11 +635,13 @@ def new_asset_instance_output_file(
         "comment": comment,
         "name": name,
         "path": file_path,
+        "render_info": render_info,
         "revision": revision,
         "representation": representation,
         "nb_elements": nb_elements,
         "extension": get_extension(file_path),
         "sep": sep,
+        "size": size,
     }
 
     if working_file is not None:
@@ -737,6 +762,8 @@ def get_last_output_files_for_entity(
     name=None,
     representation=None,
     file_status=None,
+    created_at_since=None,
+    person=None,
 ):
     """
     Args:
@@ -756,6 +783,7 @@ def get_last_output_files_for_entity(
     output_type = normalize_model_parameter(output_type)
     task_type = normalize_model_parameter(task_type)
     file_status = normalize_model_parameter(file_status)
+    person = normalize_model_parameter(person)
     path = "entities/{entity_id}/output-files/last-revisions".format(
         entity_id=entity["id"]
     )
@@ -771,6 +799,10 @@ def get_last_output_files_for_entity(
         params["name"] = name
     if file_status:
         params["file_status_id"] = file_status["id"]
+    if created_at_since:
+        params["created_at_since"] = created_at_since
+    if person:
+        params["person_id"] = person["id"]
 
     return client.fetch_all(path, params)
 
@@ -784,6 +816,8 @@ def get_last_output_files_for_asset_instance(
     name=None,
     representation=None,
     file_status=None,
+    created_at_since=None,
+    person=None,
 ):
     """
     Args:
@@ -804,6 +838,7 @@ def get_last_output_files_for_asset_instance(
     output_type = normalize_model_parameter(output_type)
     task_type = normalize_model_parameter(task_type)
     file_status = normalize_model_parameter(file_status)
+    person = normalize_model_parameter(person)
     path = (
         "asset-instances/{asset_instance_id}/entities/{temporal_entity_id}"
         "/output-files/last-revisions"
@@ -823,6 +858,10 @@ def get_last_output_files_for_asset_instance(
         params["name"] = name
     if file_status:
         params["file_status_id"] = file_status["id"]
+    if created_at_since:
+        params["created_at_since"] = created_at_since
+    if person:
+        params["person_id"] = person["id"]
 
     return client.fetch_all(path, params)
 
@@ -1103,7 +1142,9 @@ def get_children_file(children_file_id):
 
 
 # TODO: unittest
-def new_children_file(output_file, output_type, size=None, file_status=None):
+def new_children_file(
+    output_file, output_type, path=None, size=None, file_status=None, render_info=None
+):
     """
     Create a new children file of a output file
 
@@ -1119,7 +1160,9 @@ def new_children_file(output_file, output_type, size=None, file_status=None):
 
     data = {
         "output_type_id": output_type["id"],
+        "path": path,
         "size": size,
+        "render_info": render_info,
     }
     if file_status is not None:
         file_status = normalize_model_parameter(file_status)
