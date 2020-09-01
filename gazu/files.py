@@ -1333,3 +1333,66 @@ def get_last_comment_for_output_file(output_file):
     output_file = normalize_model_parameter(output_file)
     return client.fetch_first("files/%s/comments" % output_file["id"])
 
+
+# -----------------------
+# TODO: improve cache person/ entity
+# TODO: move this to a better place
+from .task import all_task_types
+from .entity import get_entity
+from .asset import get_asset
+from .person import get_person
+from .project import get_project
+import clique
+
+
+def get_attribute(func, id, retry=False):
+    if not id:
+        return None
+
+    try:
+        return next(el for el in func() if el["id"] == id)
+    except:
+        if retry:
+            return None
+
+        # try to clear cache and retry
+        func.clear_cache()
+        return get_attribute(func, id, retry=True)
+
+
+def get_output_file_data(output_file):
+    # shot
+    if output_file.get("entity_id"):
+        output_file["entity"] = get_entity(output_file["entity_id"])
+        output_file["project"] = get_project(output_file["entity"]["project_id"])
+        # sequence
+        output_file["entity"]["parent"] = get_entity(output_file["entity"]["parent_id"])
+    # asset
+    elif output_file.get("asset_instance_id"):
+        output_file["asset_instance"] = get_asset(output_file["asset_instance_id"])
+        output_file["project"] = get_project(
+            output_file["asset_instance"]["project_id"]
+        )
+
+    if output_file.get("path") and "%" in output_file["path"]:
+        # TODO: catch potential error parse (single frame, etc)
+        collection = clique.parse(output_file["path"])
+        output_file["collection_path"] = output_file["path"]
+        output_file["path"] = collection.format("{head}{padding}{tail}")
+        frames = list(collection.indexes)
+        output_file["frame_in"], output_file["frame_out"] = frames[0], frames[-1]
+
+    output_file["person"] = get_person(output_file["person_id"])
+    output_file["file_status"] = get_attribute(
+        all_file_status, output_file["file_status_id"]
+    )
+
+    output_file["output_type"] = get_attribute(
+        all_output_types, output_file["output_type_id"]
+    )
+
+    output_file["task_type"] = get_attribute(
+        all_task_types, output_file["task_type_id"]
+    )
+
+    return output_file
