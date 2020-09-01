@@ -1257,3 +1257,79 @@ def remove_dependent_file(dependent_file):
         "data/dependent-files/%s" % dependent_file["id"], {"force": "true"}
     )
 
+
+def add_comment(output_file, task_status=None, comment="", person=None, attachments=[]):
+    """
+    Add comment to given output file. Each comment requires a file_status. Since the
+    addition of comment triggers a task status change. Comment text can be
+    empty.
+
+    Args:
+        task (str / dict): The task dict or the task ID.
+        task_status (str / dict): The task status dict or ID. Currently NOT USED !
+        comment (str): Comment text
+
+    Returns:
+        dict: Created comment.
+    """
+    output_file = normalize_model_parameter(output_file)
+    task_status_id = None
+    if task_status:
+        task_status_id = normalize_model_parameter(task_status)["id"]
+
+    data = {"task_status_id": task_status_id, "comment": comment}
+
+    if person is not None:
+        person = normalize_model_parameter(person)
+        data["person_id"] = person["id"]
+
+    if len(attachments) == 0:
+        return client.post("actions/files/%s/comment" % output_file["id"], data)
+
+    else:
+        attachment = attachments.pop()
+        return client.upload(
+            "actions/files/%s/comment" % output_file["id"],
+            attachment,
+            data=data,
+            extra_files=attachments,
+        )
+
+
+def remove_comment(comment):
+    """
+    Remove given comment and related (previews, news, notifications) from
+    database.
+
+    Args:
+        comment (str / dict): The comment dict or the comment ID.
+    """
+    comment = normalize_model_parameter(comment)
+    return client.delete("data/comments/%s" % comment["id"])
+
+
+@cache
+def all_comments_for_output_file(output_file):
+    """
+    Args:
+        output_file (str / dict): The output_file dict or the output_file ID.
+
+    Returns:
+        Comments linked to the given output_file.
+    """
+    output_file = normalize_model_parameter(output_file)
+    return client.fetch_all("files/%s/comments" % output_file["id"])
+
+
+@cache
+def get_last_comment_for_output_file(output_file):
+    """
+    Args:
+        output_file (str / dict): The output_file dict or the output_file ID.
+
+    Returns:
+        Last comment posted for given output_file.
+    """
+    output_file = normalize_model_parameter(output_file)
+    return client.fetch_first("files/%s/comments" % output_file["id"])
+
