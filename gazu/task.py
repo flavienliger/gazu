@@ -109,6 +109,32 @@ def all_tasks_for_episode(episode, relations=False):
 
 
 @cache
+def all_shot_tasks_for_sequence(sequence, relations=False):
+    """
+    Retrieve all tasks directly linked to all shots of given sequence.
+    """
+    sequence = normalize_model_parameter(sequence)
+    params = {}
+    if relations:
+        params = {"relations": "true"}
+    tasks = client.fetch_all("sequences/%s/shot-tasks" % sequence["id"], params)
+    return sort_by_name(tasks)
+
+
+@cache
+def all_shot_tasks_for_episode(episode, relations=False):
+    """
+    Retrieve all tasks directly linked to all shots of given episode.
+    """
+    episode = normalize_model_parameter(episode)
+    params = {}
+    if relations:
+        params = {"relations": "true"}
+    tasks = client.fetch_all("episodes/%s/shot-tasks" % episode["id"], params)
+    return sort_by_name(tasks)
+
+
+@cache
 def all_tasks_for_task_status(project, task_type, task_status):
     """
     Args:
@@ -566,7 +592,14 @@ def add_time_spent(task, person, date, duration):
     return client.post(path, {"duration": duration})
 
 
-def add_comment(task, task_status, comment="", person=None, attachments=[]):
+def add_comment(
+    task,
+    task_status,
+    comment="",
+    person=None,
+    attachments=[],
+    created_at=None
+):
     """
     Add comment to given task. Each comment requires a task_status. Since the
     addition of comment triggers a task status change. Comment text can be
@@ -576,6 +609,8 @@ def add_comment(task, task_status, comment="", person=None, attachments=[]):
         task (str / dict): The task dict or the task ID.
         task_status (str / dict): The task status dict or ID.
         comment (str): Comment text
+        person (str / dict): Comment author
+        date (str): Comment date
 
     Returns:
         dict: Created comment.
@@ -587,6 +622,9 @@ def add_comment(task, task_status, comment="", person=None, attachments=[]):
     if person is not None:
         person = normalize_model_parameter(person)
         data["person_id"] = person["id"]
+
+    if created_at is not None:
+        data["created_at"] = created_at
 
     if len(attachments) == 0:
         return client.post("actions/tasks/%s/comment" % task["id"], data)
