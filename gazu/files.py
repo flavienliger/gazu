@@ -500,7 +500,6 @@ def new_entity_output_file(
     entity,
     output_type,
     task_type,
-    comment,
     comment=None,
     working_file=None,
     person=None,
