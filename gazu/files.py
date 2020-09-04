@@ -1333,6 +1333,11 @@ def get_last_comment_for_output_file(output_file):
     return client.fetch_first("files/%s/comments" % output_file["id"])
 
 
+def get_output_file_by_shotgun_id(shotgun_id):
+    path = "/data/files/shotgun/%s" % (shotgun_id)
+    return client.get(path)
+
+
 # -----------------------
 # TODO: improve cache person/ entity
 # TODO: move this to a better place
